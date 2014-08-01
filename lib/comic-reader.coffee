@@ -1,0 +1,4 @@
+ComicReader =
+
+
+module.exports = ComicReader
