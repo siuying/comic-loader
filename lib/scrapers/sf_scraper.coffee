@@ -4,7 +4,7 @@ ComicReader = require('../comic-reader')
 SFScraper =
   code: "sf"
 
-  # give an issue url, find the urls of images of all issue
+  # give an issue url, find all images of that issue
   # url - URL to an issue
   # success - a function with one parameter: images, which is array of URL to images
   issue: (url, success, failure) ->
