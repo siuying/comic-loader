@@ -3,6 +3,24 @@ phridge = require('phridge')
 expect = require('chai').expect
 _ = require('lodash')
 
+describe 'recent', ->
+  it 'should return list of recent comic', (done) ->
+    this.timeout(10000)
+    success = (results) ->
+      expect(results).not.to.be.null
+      expect(results).to.have.length.of.at.least(1)
+
+      first = _.first(results)
+      expect(first).to.have.property('group')
+      expect(first).to.have.property('name')
+      expect(first).to.have.property('issue')
+      expect(first).to.have.property('thumbnail')
+      expect(first).to.have.property('url')
+      done()
+    failure = (error) ->
+      throw error
+    SFScraper.recent(success, failure)
+
 describe 'search', ->
   it 'should search a comic', (done) ->
     this.timeout(10000)

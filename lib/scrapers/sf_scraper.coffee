@@ -3,11 +3,36 @@ request = require('request')
 cheerio = require('cheerio')
 URI = require('URIjs')
 ComicReader = require('../comic-reader')
-
+_ = require('lodash')
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:31.0) Gecko/20100101 Firefox/31.0"
 
 SFScraper =
   code: "sf"
+
+  # find recently updated comics
+  # success - a function with parameter "results", array of objects having following properties:
+  #   - group
+  #   - name
+  #   - issue
+  #   - thumbnail
+  #   - url
+  # failure - a function with parameter "error"
+  recent: (success, failure) ->
+    url = "http://comic.sfacg.com/WeeklyUpdate/"
+    options =
+      url: url
+      headers:
+        'User-Agent': USER_AGENT
+    request options, (error, response, body) ->
+      if !error && response.statusCode == 200
+        $ = cheerio.load(body)
+        results = (_extractDayComic($, "#Day#{i}", "#Menu_#{i}") for i in [0..7])
+        results = _.flatten(results)
+        success(results)
+      else if error
+        failure(error)
+      else
+        failure(new Error("http error: #{response}, body: #{body}"))
 
   # find comics with specific keyword
   # success - a function with parameter "results", array of objects having following properties:
@@ -45,7 +70,10 @@ SFScraper =
 
   # list available issues of a comic
   # url - a comic URL
-  # success - success callback
+  # success - a function with parameter "results", array of objects having following properties:
+  #   - issues
+  #     - name
+  #     - url
   # failure - failure callback
   list: (url, success, failure) ->
     options =
@@ -105,6 +133,21 @@ SFScraper =
       )
       .finally(phridge.disposeAll)
       .done(success, failure)
+
+_extractDayComic = ($, comicQuery, titleQuery) ->
+  items = []
+
+  date = $(titleQuery).text()
+
+  $("#{comicQuery} table table").each (index, item) ->
+    link = $("a", item)
+    url = link.attr('href') if link
+    image = $("img", item)
+    thumbnail = image.attr('src') if image
+    name = image.attr('alt') if image
+    issue = $("tr:last-child > td", item).text()
+    items.push {group: date, name: name, issue: issue, thumbnail: thumbnail, url: url}
+  return items
 
 ComicReader.register(SFScraper.code, SFScraper)
 
