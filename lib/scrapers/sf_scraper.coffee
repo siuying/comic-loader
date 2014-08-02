@@ -8,20 +8,23 @@ SFScraper =
   # url - URL to an issue
   # success - a function with one parameter: images, which is array of URL to images
   issue: (url, success, failure) ->
-    return phridge.spawn()
+    return phridge.spawn({loadImages: false})
       .then((phantom) -> phantom.openPage(url))
       .then((page) ->
         page.run ->
           this.evaluate ->
             images = [];
 
-            # NextPage(), curIndex and picCount are defined in the page
-            # NextPage() increment curIndex and update #curPic source
-            while (curIndex < picCount)
-              images.push(document.querySelector("#curPic").src);
-              NextPage()
+            # NextPage() load next image
+            while true
+              image = document.querySelector("#curPic").src
+              if images.indexOf(image) > -1
+                break
+              else
+                images.push(image)
+                NextPage()
 
-            return images;
+            return images
       )
       .finally(phridge.disposeAll)
       .done(success, failure)
