@@ -34,10 +34,10 @@ describe 'search', ->
       done()
     ).catch((error) -> throw error)
 
-describe 'list', ->
+describe 'issues', ->
   it 'should list issues of a comic', (done) ->
     this.timeout(5000)
-    SFScraper.list("http://comic.sfacg.com/HTML/OnePiece/").then((results) ->
+    SFScraper.issues("http://comic.sfacg.com/HTML/OnePiece/").then((results) ->
       expect(results.issues).to.have.length.of.at.least(400)
 
       # result is in reversed order!
@@ -47,14 +47,14 @@ describe 'list', ->
       done()
     ).catch((error) -> throw error)
 
-describe 'issue', ->
+describe 'pages', ->
   afterEach (done) ->
     phridge.disposeAll().then(done(null))
 
   it 'should return an issues images', (done) ->
     this.timeout(30000) # 30s timeout
     url = "http://comic.sfacg.com/HTML/OnePiece/001j/"
-    SFScraper.issue(url).then((images) ->
+    SFScraper.pages(url).then((images) ->
       expect(images).to.have.length(104)
       expect(_.first(images)).to.equal("http://hotpic.sfacg.com/Pic/OnlineComic1/OnePiece/001j/001_18620.jpg")
       expect(_.last(images)).to.equal("http://hotpic.sfacg.com/Pic/OnlineComic1/OnePiece/001j/104_31044.jpg")

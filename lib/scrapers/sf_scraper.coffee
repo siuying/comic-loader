@@ -82,7 +82,7 @@ SFScraper =
   #     - name
   #     - url
   # failure - failure callback
-  list: (url) ->
+  issues: (url) ->
     new Promise (resolve, reject) ->
       options =
         url: url
@@ -116,11 +116,11 @@ SFScraper =
         else
           reject(new Error("http error #{response.statusCode}: #{response}, body: #{body}"))
 
-  # give an issue url, find all images of that issue
+  # give an issue url, find all pages of that issue
   # url - URL to an issue
   # success - a function with parameter "images", which is array of URL to images
   # failure - a function with parameter "error"
-  issue: (url, success, failure) ->
+  pages: (url, success, failure) ->
     new Promise (resolve, reject) ->
       return phridge.spawn({loadImages: false})
         .then((phantom) -> phantom.openPage(url))

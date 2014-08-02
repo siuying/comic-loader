@@ -7,6 +7,6 @@ describe 'scraper', ->
     scraper = ComicReader.scraper('sf')
     expect(scraper).to.have.property('code')
     expect(scraper).to.have.property('search')
-    expect(scraper).to.have.property('issue')
-    expect(scraper).to.have.property('list')
+    expect(scraper).to.have.property('issues')
+    expect(scraper).to.have.property('pages')
     expect(scraper.code).to.equal('sf')

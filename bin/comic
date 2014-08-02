@@ -43,7 +43,7 @@ var scrape = scraper.search($comicName).then(function(issues){
   var first = issues[0]
   if (first) {
     console.log(first.name + " found, looking for issue ...");
-    return scraper.list(first.url);
+    return scraper.issues(first.url);
   } else {
     throw new Error("\"" + $comicName + "\" not found");
   }
@@ -59,7 +59,7 @@ var scrape = scraper.search($comicName).then(function(issues){
       $outputDirectory = path.join($comicName, issue.name);
     }
     // If issue found, list all pages
-    return scraper.issue(issue.url);
+    return scraper.pages(issue.url);
   } else {
     console.log("Issue " + issueName + " not found")
     throw new Error("Issue " + issueName + " not found");
