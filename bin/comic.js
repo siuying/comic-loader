@@ -6,36 +6,30 @@ var download = require('download');
 var path = require('path');
 var phridge = require('phridge');
 var Promise = require('es6-promise').Promise;
+var spawn = require('child_process').spawn;
+var _ = require('lodash')
+
+var ComicReader = require('../lib/comic-reader')
+var SFScraper = require('../lib/scrapers/sf_scraper')
+var scraper = ComicReader.scraper('sf')
 
 process.title = 'comic';
 
 var argv = rc('comic', {}, optimist
   .usage('Usage: $0 comic-name [issue] [option]')
   .alias('d', 'directory').describe('d', 'save comic to directory, default [comic-name]/[issue]')
+  .alias('p', 'preview').describe('p', 'open the downloaded files with Preview (OSX only)')
   .argv);
 
 var $comicName   = argv._[0];
 var $comicIssue  = argv._[1];
-var $outputDirectory = null;
+var $outputDirectory = argv.directory;
+var $preview     = argv.preview;
 
 if (!$comicName) {
   optimist.showHelp();
   process.exit(1);
 }
-
-if (argv.directory) {
-  $outputDirectory = argv.directory
-}
-
-var errorHandler = function(error){
-  console.error("Error: " + error);
-  process.exit(2);
-}
-
-var ComicReader = require('../lib/comic-reader')
-var SFScraper = require('../lib/scrapers/sf_scraper')
-var _ = require('lodash')
-var scraper = ComicReader.scraper('sf')
 
 // Search comic with the specific name
 var scrape = scraper.search($comicName).then(function(issues){
@@ -83,6 +77,9 @@ var scrape = scraper.search($comicName).then(function(issues){
   return download(files, $outputDirectory);
 }).then(function(){
   console.log("completed.")
+  if ($preview) {
+    spawn("open", ["-a", "Preview", $outputDirectory]);
+  }
   phridge.destroyAll(function(){
     process.exit(0);
   });
