@@ -7,12 +7,21 @@ module.exports = (grunt) =>
         src: ['**/*.coffee']
         dest: 'lib'
         ext: '.js'
-      tests:
-        expand: true
-        cwd: 'tests'
-        src: ['**/*.coffee']
-        dest: 'tests'
-        ext: '.test.js'
+    mochaTest:
+      test:
+        options:
+          reporter: 'spec'
+          compilers: 'coffee:coffee-script/register'
+        src: ['test/**/*.coffee']
+    watch:
+      compile:
+        files: ['lib/**/*.coffee']
+        tasks: ['coffee:compile']
+        options:
+          spawn: false
 
   grunt.loadNpmTasks('grunt-contrib-coffee')
+  grunt.loadNpmTasks('grunt-contrib-watch')
+  grunt.loadNpmTasks('grunt-mocha-test')
   grunt.registerTask('default', ['coffee:compile'])
+  grunt.registerTask('test', ['mochaTest:test'])
