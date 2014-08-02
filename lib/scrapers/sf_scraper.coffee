@@ -145,12 +145,12 @@ _extractDayComic = ($, comicQuery, titleQuery) ->
   date = $(titleQuery).text()
 
   $("#{comicQuery} table table").each (index, item) ->
-    link = $("a", item)
-    url = link.attr('href') if link
-    image = $("img", item)
-    thumbnail = image.attr('src') if image
-    name = image.attr('alt') if image
-    issue = $("tr:last-child > td", item).text()
+    link      = $("a", item)
+    url       = link?.attr('href')
+    image     = $("img", item)
+    thumbnail = image?.attr('src')
+    name      = image?.attr('alt')
+    issue     = $("tr:last-child > td", item).text()
     items.push {group: date, name: name, issue: issue, thumbnail: thumbnail, url: url}
   return items
 
