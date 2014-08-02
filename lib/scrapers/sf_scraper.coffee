@@ -15,7 +15,7 @@ SFScraper =
           this.evaluate ->
             images = [];
 
-            # NextPage() load next image
+            # NextPage() is defined in the page, which should change curPic
             while true
               image = document.querySelector("#curPic").src
               if images.indexOf(image) > -1
