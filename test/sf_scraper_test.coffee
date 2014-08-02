@@ -6,7 +6,7 @@ _ = require('lodash')
 describe 'recent', ->
   it 'should return list of recent comic', (done) ->
     this.timeout(10000)
-    success = (results) ->
+    SFScraper.recent().then((results) ->
       expect(results).not.to.be.null
       expect(results).to.have.length.of.at.least(1)
 
@@ -17,14 +17,12 @@ describe 'recent', ->
       expect(first).to.have.property('thumbnail')
       expect(first).to.have.property('url')
       done()
-    failure = (error) ->
-      throw error
-    SFScraper.recent(success, failure)
+    ).catch((error) -> throw error)
 
 describe 'search', ->
   it 'should search a comic', (done) ->
     this.timeout(10000)
-    success = (results) ->
+    SFScraper.search("海").then((results) ->
       expect(results).not.to.be.null
       expect(results).to.have.length(19)
 
@@ -34,24 +32,20 @@ describe 'search', ->
       expect(first.name).to.equal("海贼王/One Piece")
 
       done()
-    failure = (error) ->
-      throw error
-    comics = SFScraper.search("海", success, failure)
+    ).catch((error) -> throw error)
 
 describe 'list', ->
   it 'should list issues of a comic', (done) ->
     this.timeout(5000)
-    success = (result) ->
-      expect(result.issues).to.have.length.of.at.least(400)
+    SFScraper.list("http://comic.sfacg.com/HTML/OnePiece/").then((results) ->
+      expect(results.issues).to.have.length.of.at.least(400)
 
       # result is in reversed order!
-      issue = _.last(result.issues)
+      issue = _.last(results.issues)
       expect(issue.name).to.equal("001卷")
       expect(issue.url).to.equal("http://comic.sfacg.com/HTML/OnePiece/001j/")
       done()
-    failure = (error) ->
-      throw error
-    SFScraper.list("http://comic.sfacg.com/HTML/OnePiece/", success, failure)
+    ).catch((error) -> throw error)
 
 describe 'issue', ->
   afterEach (done) ->
@@ -60,11 +54,9 @@ describe 'issue', ->
   it 'should return an issues images', (done) ->
     this.timeout(30000) # 30s timeout
     url = "http://comic.sfacg.com/HTML/OnePiece/001j/"
-    success = (images) ->
+    SFScraper.issue(url).then((images) ->
       expect(images).to.have.length(104)
       expect(_.first(images)).to.equal("http://hotpic.sfacg.com/Pic/OnlineComic1/OnePiece/001j/001_18620.jpg")
       expect(_.last(images)).to.equal("http://hotpic.sfacg.com/Pic/OnlineComic1/OnePiece/001j/104_31044.jpg")
       done()
-    failure = (error) ->
-      throw error
-    images = SFScraper.issue(url, success, failure)
+    ).catch((e) -> throw e)

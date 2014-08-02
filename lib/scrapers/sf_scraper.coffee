@@ -1,6 +1,7 @@
 phridge = require('phridge')
 request = require('request')
 cheerio = require('cheerio')
+Promise = require('es6-promise').Promise
 URI = require('URIjs')
 _ = require('lodash')
 
@@ -21,22 +22,23 @@ SFScraper =
   #   - thumbnail
   #   - url
   # failure - a function with parameter "error"
-  recent: (success, failure) ->
-    url = "http://comic.sfacg.com/WeeklyUpdate/"
-    options =
-      url: url
-      headers:
-        'User-Agent': USER_AGENT
-    request options, (error, response, body) ->
-      if !error && response.statusCode == 200
-        $ = cheerio.load(body)
-        results = (_extractDayComic($, "#Day#{i}", "#Menu_#{i}") for i in [0..7])
-        results = _.flatten(results)
-        success(results)
-      else if error
-        failure(error)
-      else
-        failure(new Error("http error: #{response}, body: #{body}"))
+  recent: ->
+    new Promise (resolve, reject) ->
+      url = "http://comic.sfacg.com/WeeklyUpdate/"
+      options =
+        url: url
+        headers:
+          'User-Agent': USER_AGENT
+      request options, (error, response, body) ->
+        if !error && response.statusCode == 200
+          $ = cheerio.load(body)
+          results = (_extractDayComic($, "#Day#{i}", "#Menu_#{i}") for i in [0..7])
+          results = _.flatten(results)
+          resolve(results)
+        else if error
+          reject(error)
+        else
+          reject(new Error("http error: #{response}, body: #{body}"))
 
   # find comics with specific keyword
   # success - a function with parameter "results", array of objects having following properties:
@@ -44,33 +46,34 @@ SFScraper =
   #   - thumbnail
   #   - url
   # failure - a function with parameter "error"
-  search: (keyword, success, failure) ->
-    encodedKeyword = encodeURI(keyword)
-    url = "http://s.sfacg.com/?Key=#{encodedKeyword}&S=&SS="
-    options =
-      url: url
-      headers:
-        'User-Agent': USER_AGENT
-    request options, (error, response, body) ->
-      if !error && response.statusCode == 200
-        $ = cheerio.load(body)
+  search: (keyword) ->
+    new Promise (resolve, reject) ->
+      encodedKeyword = encodeURI(keyword)
+      url = "http://s.sfacg.com/?Key=#{encodedKeyword}&S=&SS="
+      options =
+        url: url
+        headers:
+          'User-Agent': USER_AGENT
+      request options, (error, response, body) ->
+        if !error && response.statusCode == 200
+          $ = cheerio.load(body)
 
-        table = $("#form1 table")
-          .filter((i, elem) -> $(".Conjunction", elem).length > 0)
-          .first()
+          table = $("#form1 table")
+            .filter((i, elem) -> $(".Conjunction", elem).length > 0)
+            .first()
 
-        results = $("ul", table).map (i, item) ->
-          image = $("img", item)
-          thumbnail = image.attr('src') if image
-          link = $("a", item)
-          url = link.attr('href') if link
-          name = link.text() if link
-          return {thumbnail: thumbnail, url: url, name: name}
-        success(results)
-      else if error
-        failure(error)
-      else
-        failure(new Error("http error: #{response}, body: #{body}"))
+          results = $("ul", table).map (i, item) ->
+            image = $("img", item)
+            thumbnail = image.attr('src') if image
+            link = $("a", item)
+            url = link.attr('href') if link
+            name = link.text() if link
+            return {thumbnail: thumbnail, url: url, name: name}
+          resolve(results)
+        else if error
+          reject(error)
+        else
+          reject(new Error("http error: #{response}, body: #{body}"))
 
   # list available issues of a comic
   # url - a comic URL
@@ -79,64 +82,66 @@ SFScraper =
   #     - name
   #     - url
   # failure - failure callback
-  list: (url, success, failure) ->
-    options =
-      url: url
-      headers:
-        'User-Agent': USER_AGENT
-    request options, (error, response, body) ->
-      if !error && response.statusCode == 200
-        issues = []
-        $ = cheerio.load(body)
-        $("script").remove()
+  list: (url) ->
+    new Promise (resolve, reject) ->
+      options =
+        url: url
+        headers:
+          'User-Agent': USER_AGENT
+      request options, (error, response, body) ->
+        if !error && response.statusCode == 200
+          issues = []
+          $ = cheerio.load(body)
+          $("script").remove()
 
-        # find 正篇 comic list
-        $("table.base_line")
-          .first()
-          .parent("td")
-          .children()
-          .filter((i, elem) -> $(".serialise_list_bg1", elem).text().indexOf("正     篇") > -1 )
-          .next()
-          .children("li")
-          .each((i, elem) ->
-            link = $("a", elem)
-            if link
-              issueUrl = URI(link.attr('href')).absoluteTo(url).toString()
-              issueName = link.text()
-              issues.push {url: issueUrl, name: issueName}
-          )
+          # find 正篇 comic list
+          $("table.base_line")
+            .first()
+            .parent("td")
+            .children()
+            .filter((i, elem) -> $(".serialise_list_bg1", elem).text().indexOf("正     篇") > -1 )
+            .next()
+            .children("li")
+            .each((i, elem) ->
+              link = $("a", elem)
+              if link
+                issueUrl = URI(link.attr('href')).absoluteTo(url).toString()
+                issueName = link.text()
+                issues.push {url: issueUrl, name: issueName}
+            )
 
-        success({issues: issues})
-      else if error
-        failure(error)
-      else
-        failure(new Error("http error #{response.statusCode}: #{response}, body: #{body}"))
+          resolve({issues: issues})
+        else if error
+          reject(error)
+        else
+          reject(new Error("http error #{response.statusCode}: #{response}, body: #{body}"))
 
   # give an issue url, find all images of that issue
   # url - URL to an issue
   # success - a function with parameter "images", which is array of URL to images
   # failure - a function with parameter "error"
   issue: (url, success, failure) ->
-    return phridge.spawn({loadImages: false})
-      .then((phantom) -> phantom.openPage(url))
-      .then((page) ->
-        page.run ->
-          this.evaluate ->
-            images = [];
+    new Promise (resolve, reject) ->
+      return phridge.spawn({loadImages: false})
+        .then((phantom) -> phantom.openPage(url))
+        .then((page) ->
+          page.run ->
+            this.evaluate ->
+              images = [];
 
-            # NextPage() is defined in the page, which should change curPic
-            while true
-              image = document.querySelector("#curPic").src
-              if !image || images.indexOf(image) > -1
-                break
-              else
-                images.push(image)
-                NextPage()
+              # NextPage() is defined in the page, which should change curPic
+              while true
+                image = document.querySelector("#curPic").src
+                if !image || images.indexOf(image) > -1
+                  break
+                else
+                  images.push(image)
+                  NextPage()
 
-            return images
-      )
-      .finally(phridge.disposeAll)
-      .done(success, failure)
+              return images
+        )
+        .finally(phridge.disposeAll)
+        .done(resolve, reject)
 
 _extractDayComic = ($, comicQuery, titleQuery) ->
   items = []

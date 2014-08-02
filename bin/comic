@@ -4,6 +4,8 @@ var optimist = require('optimist');
 var rc = require('rc');
 var download = require('download');
 var path = require('path');
+var phridge = require('phridge');
+var Promise = require('es6-promise').Promise;
 
 process.title = 'comic';
 
@@ -12,17 +14,17 @@ var argv = rc('comic', {}, optimist
   .alias('d', 'directory').describe('d', 'save comic to directory, default [comic-name]/[issue]')
   .argv);
 
-var comicName   = argv._[0];
-var comicIssue  = argv._[1];
-var outputDirectory = null;
+var $comicName   = argv._[0];
+var $comicIssue  = argv._[1];
+var $outputDirectory = null;
 
-if (!comicName || !comicIssue) {
+if (!$comicName || !$comicIssue) {
   optimist.showHelp();
   process.exit(1);
 }
 
 if (argv.directory) {
-  outputDirectory = argv.directory
+  $outputDirectory = argv.directory
 }
 
 var errorHandler = function(error){
@@ -35,52 +37,55 @@ var SFScraper = require('../lib/scrapers/sf_scraper')
 var _ = require('lodash')
 var scraper = ComicReader.scraper('sf')
 
-var downloadIssuePages = function(issueUrl, outputDir) {
-  scraper.issue(issueUrl, function(pages){
-    console.log("downloaded issue, output dir: ", outputDir);
-    var files = _(pages).map(function(page, index){
-      var name = "00000" + index;
-      name = name.substring(name.length - 4, name.length);
-      var ext = path.extname(page);
-      var filename = name + ext
-      return {url: page, name: filename}
-    }).value();
+// Search comic with the specific name
+var scrape = scraper.search($comicName).then(function(issues){
+  // For the first comic found, find all issues
+  var first = issues[0]
+  if (first) {
+    console.log(first.name + " found, looking for issue ...");
+    return scraper.list(first.url);
+  } else {
+    throw new Error("\"" + $comicName + "\" not found");
+  }
+}).then(function(issues){
+  // Find the issue which user requested
+  var issue = _(issues.issues).filter(function(issue){
+    return issue.name && issue.name.indexOf($comicIssue) === 0
+  }).first();
 
-    download(files, outputDir);
-  }, errorHandler);
-};
-
-var findIssueUrl = function(comicUrl, comicName, issueName, outputDirectory) {
-  scraper.list(comicUrl, function(issues){
-    var issue = _(issues.issues).filter(function(issue){
-      return issue.name && issue.name.indexOf(issueName) === 0
-    }).first();
-
-    if (issue) {
-      console.log("Issue", issueName, "found, fetch images... ");
-      if (!outputDirectory) {
-        outputDirectory = path.join(comicName, issue.name);
-      }
-      downloadIssuePages(issue.url, outputDirectory);
-
-    } else {
-      console.log("Issue " + issueName + " not found");
-      process.exit(4);
+  if (issue) {
+    console.log("Issue", $comicIssue, "found, fetch images... ");
+    if (!$outputDirectory) {
+      $outputDirectory = path.join($comicName, issue.name);
     }
-  }, errorHandler);
-}
+    // If issue found, list all pages
+    return scraper.issue(issue.url);
+  } else {
+    console.log("Issue " + issueName + " not found")
+    throw new Error("Issue " + issueName + " not found");
+  }
+}).then(function(pages){
+  // Prepare list of files to be download and the target file
+  console.log("downloaded issue, output dir: ", $outputDirectory);
+  var files = _(pages).map(function(page, index){
+    var name = "00000" + index;
+    name = name.substring(name.length - 4, name.length);
+    var ext = path.extname(page);
+    var filename = name + ext
+    return {url: page, name: filename}
+  }).value();
 
-var findComic = function(name, issue, outputDirectory) {
-  scraper.search(name, function(issues){
-    var first = issues[0]
-    if (first) {
-      console.log(first.name + " found, looking for issue ...");
-      findIssueUrl(first.url, first.name, issue, outputDirectory)
-    } else {
-      console.log("\"" + comicName + "\" not found");
-      process.exit(3);
-    }
-  }, errorHandler);
-}
-
-findComic(comicName, comicIssue, outputDirectory);
+  // Download files
+  return download(files, $outputDirectory);
+}).then(function(){
+  console.log("all task completed")
+  phridge.destroyAll(function(){
+    console.error("Done", result);
+    process.exit(0);
+  });
+}).catch(function(error){
+  phridge.destroyAll(function(){
+    console.error("Error: " + error);
+    process.exit(2);
+  });
+});
