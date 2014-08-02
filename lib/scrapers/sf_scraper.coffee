@@ -2,9 +2,13 @@ phridge = require('phridge')
 request = require('request')
 cheerio = require('cheerio')
 URI = require('URIjs')
-ComicReader = require('../comic-reader')
 _ = require('lodash')
+
+ComicReader = require('../comic-reader')
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:31.0) Gecko/20100101 Firefox/31.0"
+
+phridge.config.stdout = null
+phridge.config.stderr = null
 
 SFScraper =
   code: "sf"
