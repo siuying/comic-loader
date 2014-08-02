@@ -10,7 +10,7 @@ var Promise = require('es6-promise').Promise;
 process.title = 'comic';
 
 var argv = rc('comic', {}, optimist
-  .usage('Usage: $0 comic-name issue [option]')
+  .usage('Usage: $0 comic-name [issue] [option]')
   .alias('d', 'directory').describe('d', 'save comic to directory, default [comic-name]/[issue]')
   .argv);
 
@@ -18,7 +18,7 @@ var $comicName   = argv._[0];
 var $comicIssue  = argv._[1];
 var $outputDirectory = null;
 
-if (!$comicName || !$comicIssue) {
+if (!$comicName) {
   optimist.showHelp();
   process.exit(1);
 }
@@ -42,31 +42,35 @@ var scrape = scraper.search($comicName).then(function(issues){
   // For the first comic found, find all issues
   var first = issues[0]
   if (first) {
-    console.log(first.name + " found, looking for issue ...");
+    $comicName = first.name;
     return scraper.issues(first.url);
   } else {
     throw new Error("\"" + $comicName + "\" not found");
   }
 }).then(function(issues){
   // Find the issue which user requested
-  var issue = _(issues.issues).filter(function(issue){
-    return issue.name && issue.name.indexOf($comicIssue) === 0
-  }).first();
+  var issue;
+
+  if ($comicIssue) {
+    issue = _(issues.issues).filter(function(issue){
+      return issue.name && issue.name.indexOf($comicIssue) === 0
+    }).first();
+  } else {
+    issue = _(issues.issues).first();
+  }
 
   if (issue) {
-    console.log("Issue", $comicIssue, "found, fetch images... ");
     if (!$outputDirectory) {
       $outputDirectory = path.join($comicName, issue.name);
     }
     // If issue found, list all pages
+    console.log("Downloading: ", $comicName, issue.name, "...");
     return scraper.pages(issue.url);
   } else {
-    console.log("Issue " + issueName + " not found")
     throw new Error("Issue " + issueName + " not found");
   }
 }).then(function(pages){
   // Prepare list of files to be download and the target file
-  console.log("downloaded issue, output dir: ", $outputDirectory);
   var files = _(pages).map(function(page, index){
     var name = "00000" + index;
     name = name.substring(name.length - 4, name.length);
@@ -78,9 +82,8 @@ var scrape = scraper.search($comicName).then(function(issues){
   // Download files
   return download(files, $outputDirectory);
 }).then(function(){
-  console.log("all task completed")
+  console.log("completed.")
   phridge.destroyAll(function(){
-    console.error("Done", result);
     process.exit(0);
   });
 }).catch(function(error){
