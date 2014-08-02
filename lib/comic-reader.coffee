@@ -1,10 +1,10 @@
-ComicReader =
-  scrapers: {}
+_scrapers = {}
 
+ComicReader =
   register: (code, scraper) ->
-    @scrapers[code] = scraper
+    _scrapers[code] = scraper
 
   scraper: (code) ->
-    @scrapers[code]
+    _scrapers[code]
 
 module.exports = ComicReader
