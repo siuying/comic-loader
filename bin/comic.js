@@ -72,7 +72,7 @@ var scrape = scraper.search($comicName).then(function(issues){
 }).then(function(pages){
   // Prepare list of files to be download and the target file
   var files = _(pages).map(function(page, index){
-    var name = "00000" + index;
+    var name = "00000" + (index+1);
     name = name.substring(name.length - 4, name.length);
     var ext = path.extname(page);
     var filename = name + ext
