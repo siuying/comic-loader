@@ -1,7 +1,10 @@
 phridge = require('phridge')
 request = require('request')
 cheerio = require('cheerio')
+URI = require('URIjs')
 ComicReader = require('../comic-reader')
+
+USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:31.0) Gecko/20100101 Firefox/31.0"
 
 SFScraper =
   code: "sf"
@@ -15,15 +18,19 @@ SFScraper =
   search: (keyword, success, failure) ->
     encodedKeyword = encodeURI(keyword)
     url = "http://s.sfacg.com/?Key=#{encodedKeyword}&S=&SS="
-    request url, (error, response, body) ->
+    options =
+      url: url
+      headers:
+        'User-Agent': USER_AGENT
+    request options, (error, response, body) ->
       if !error && response.statusCode == 200
         $ = cheerio.load(body)
 
-        row = $("#form1 table")
+        table = $("#form1 table")
           .filter((i, elem) -> $(".Conjunction", elem).length > 0)
           .first()
 
-        results = $("ul", row).map (i, item) ->
+        results = $("ul", table).map (i, item) ->
           image = $("img", item)
           thumbnail = image.attr('src') if image
           link = $("a", item)
@@ -34,7 +41,44 @@ SFScraper =
       else if error
         failure(error)
       else
-        failure(new Error("http error: #{response}"))
+        failure(new Error("http error: #{response}, body: #{body}"))
+
+  # list available issues of a comic
+  # url - a comic URL
+  # success - success callback
+  # failure - failure callback
+  list: (url, success, failure) ->
+    options =
+      url: url
+      headers:
+        'User-Agent': USER_AGENT
+    request options, (error, response, body) ->
+      if !error && response.statusCode == 200
+        issues = []
+        $ = cheerio.load(body)
+        $("script").remove()
+
+        # find 正篇 comic list
+        $("table.base_line")
+          .first()
+          .parent("td")
+          .children()
+          .filter((i, elem) -> $(".serialise_list_bg1", elem).text().indexOf("正     篇") > -1 )
+          .next()
+          .children("li")
+          .each((i, elem) ->
+            link = $("a", elem)
+            if link
+              issueUrl = URI(link.attr('href')).absoluteTo(url).toString()
+              issueName = link.text()
+              issues.push {url: issueUrl, name: issueName}
+          )
+
+        success({issues: issues})
+      else if error
+        failure(error)
+      else
+        failure(new Error("http error #{response.statusCode}: #{response}, body: #{body}"))
 
   # give an issue url, find all images of that issue
   # url - URL to an issue

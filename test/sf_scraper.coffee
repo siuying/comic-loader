@@ -19,14 +19,29 @@ describe 'search', ->
       throw error
     comics = SFScraper.search("海", success, failure)
 
+describe 'list', ->
+  it 'should list issues of a comic', (done) ->
+    this.timeout(5000)
+    success = (result) ->
+      expect(result.issues).to.have.length.of.at.least(400)
+
+      # result is in reversed order!
+      issue = _.last(result.issues)
+      expect(issue.name).to.equal("001卷")
+      expect(issue.url).to.equal("http://comic.sfacg.com/HTML/OnePiece/001j/")
+      done()
+    failure = (error) ->
+      throw error
+    SFScraper.list("http://comic.sfacg.com/HTML/OnePiece/", success, failure)
+
 describe 'issue', ->
   it 'should return an issues images', (done) ->
     this.timeout(20000) # 20s timeout
-    url = "http://comic.sfacg.com/HTML/ASJS/102/"
+    url = "http://comic.sfacg.com/HTML/OnePiece/001j/"
     success = (images) ->
-      expect(images).to.have.length(18)
-      expect(_.first(images)).to.equal("http://coldpic.sfacg.com/Pic/OnlineComic4/ASJS/102/001_9447.jpg")
-      expect(_.last(images)).to.equal("http://coldpic.sfacg.com/Pic/OnlineComic4/ASJS/102/018_4303.png")
+      expect(images).to.have.length(104)
+      expect(_.first(images)).to.equal("http://hotpic.sfacg.com/Pic/OnlineComic1/OnePiece/001j/001_18620.jpg")
+      expect(_.last(images)).to.equal("http://hotpic.sfacg.com/Pic/OnlineComic1/OnePiece/001j/104_31044.jpg")
       done()
     failure = (error) ->
       throw error
