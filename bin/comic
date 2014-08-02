@@ -1,0 +1,86 @@
+#!/usr/bin/env node
+
+var optimist = require('optimist');
+var rc = require('rc');
+var download = require('download');
+var path = require('path');
+
+process.title = 'comic';
+
+var argv = rc('comic', {}, optimist
+  .usage('Usage: $0 comic-name issue [option]')
+  .alias('d', 'directory').describe('d', 'save comic to directory, default [comic-name]/[issue]')
+  .argv);
+
+var comicName   = argv._[0];
+var comicIssue  = argv._[1];
+var outputDirectory = null;
+
+if (!comicName || !comicIssue) {
+  optimist.showHelp();
+  process.exit(1);
+}
+
+if (argv.directory) {
+  outputDirectory = argv.directory
+}
+
+var errorHandler = function(error){
+  console.error("Error: " + error);
+  process.exit(2);
+}
+
+var ComicReader = require('../lib/comic-reader')
+var SFScraper = require('../lib/scrapers/sf_scraper')
+var _ = require('lodash')
+var scraper = ComicReader.scraper('sf')
+
+var downloadIssuePages = function(issueUrl, outputDir) {
+  scraper.issue(issueUrl, function(pages){
+    console.log("downloaded issue, output dir: ", outputDir);
+    var files = _(pages).map(function(page, index){
+      var name = "00000" + index;
+      name = name.substring(name.length - 4, name.length);
+      var ext = path.extname(page);
+      var filename = name + ext
+      return {url: page, name: filename}
+    }).value();
+
+    download(files, outputDir);
+  }, errorHandler);
+};
+
+var findIssueUrl = function(comicUrl, comicName, issueName, outputDirectory) {
+  scraper.list(comicUrl, function(issues){
+    var issue = _(issues.issues).filter(function(issue){
+      return issue.name && issue.name.indexOf(issueName) === 0
+    }).first();
+
+    if (issue) {
+      console.log("Issue", issueName, "found, fetch images... ");
+      if (!outputDirectory) {
+        outputDirectory = path.join(comicName, issue.name);
+      }
+      downloadIssuePages(issue.url, outputDirectory);
+
+    } else {
+      console.log("Issue " + issueName + " not found");
+      process.exit(4);
+    }
+  }, errorHandler);
+}
+
+var findComic = function(name, issue, outputDirectory) {
+  scraper.search(name, function(issues){
+    var first = issues[0]
+    if (first) {
+      console.log(first.name + " found, looking for issue ...");
+      findIssueUrl(first.url, first.name, issue, outputDirectory)
+    } else {
+      console.log("\"" + comicName + "\" not found");
+      process.exit(3);
+    }
+  }, errorHandler);
+}
+
+findComic(comicName, comicIssue, outputDirectory);
