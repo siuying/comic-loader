@@ -14,14 +14,13 @@ phridge.config.stderr = null
 SFScraper =
   code: "sf"
 
-  # find recently updated comics
-  # success - a function with parameter "results", array of objects having following properties:
+  # find recently updated comics.
+  # return a promise that on success, pass array of objects having following properties:
   #   - group
   #   - name
   #   - issue
   #   - thumbnail
   #   - url
-  # failure - a function with parameter "error"
   recent: ->
     new Promise (resolve, reject) ->
       url = "http://comic.sfacg.com/WeeklyUpdate/"
@@ -41,11 +40,10 @@ SFScraper =
           reject(new Error("http error: #{response}, body: #{body}"))
 
   # find comics with specific keyword
-  # success - a function with parameter "results", array of objects having following properties:
+  # return a promise that on success, pass array of objects having following properties:
   #   - name
   #   - thumbnail
   #   - url
-  # failure - a function with parameter "error"
   search: (keyword) ->
     new Promise (resolve, reject) ->
       encodedKeyword = encodeURI(keyword)
@@ -77,11 +75,10 @@ SFScraper =
 
   # list available issues of a comic
   # url - a comic URL
-  # success - a function with parameter "results", array of objects having following properties:
+  # return a promise that on success, pass array of objects having following properties:
   #   - issues
   #     - name
   #     - url
-  # failure - failure callback
   issues: (url) ->
     new Promise (resolve, reject) ->
       options =
@@ -118,8 +115,7 @@ SFScraper =
 
   # give an issue url, find all pages of that issue
   # url - URL to an issue
-  # success - a function with parameter "images", which is array of URL to images
-  # failure - a function with parameter "error"
+  # return a promise that on success, pass array of URL to images of the page
   pages: (url, success, failure) ->
     new Promise (resolve, reject) ->
       return phridge.spawn({loadImages: false})
