@@ -18,11 +18,13 @@ process.title = 'comic';
 var argv = rc('comic', {}, optimist
   .usage('Usage: $0 comic-name [issue] [option]')
   .alias('d', 'directory').describe('d', 'save comic to directory, default [comic-name]/[issue]')
+  .alias('a', 'all').describe('a', 'download all issues of the comic')
   .alias('p', 'preview').describe('p', 'open the downloaded files with Preview (OSX only)')
   .argv);
 
 var $comicName   = argv._[0];
 var $comicIssue  = argv._[1];
+var $downloadAll = argv.all;
 var $outputDirectory = argv.directory;
 var $preview     = argv.preview;
 
@@ -30,6 +32,23 @@ if (!$comicName) {
   optimist.showHelp();
   process.exit(1);
 }
+
+var createDownloadPagesPromise = function(comicName, issueName, outputDirectory) {
+  return function(pages){
+    console.log("Downloading: ", comicName, issueName, "...");
+    // Prepare list of files to be download and the target file
+    var files = _(pages).map(function(page, index){
+      var name = "00000" + (index+1);
+      name = name.substring(name.length - 4, name.length);
+      var ext = path.extname(page);
+      var filename = name + ext
+      return {url: page, name: filename}
+    }).value();
+
+    // Download files
+    return download(files, outputDirectory);
+  };
+};
 
 // Search comic with the specific name
 var scrape = scraper.search($comicName).then(function(issues){
@@ -42,39 +61,52 @@ var scrape = scraper.search($comicName).then(function(issues){
     throw new Error("\"" + $comicName + "\" not found");
   }
 }).then(function(issues){
-  // Find the issue which user requested
-  var issue;
+  if ($downloadAll) {
+    var promise;
+    _(issues.issues).reverse().each(function(issue){
+      var dest;
 
-  if ($comicIssue) {
-    issue = _(issues.issues).filter(function(issue){
-      return issue.name && issue.name.indexOf($comicIssue) === 0
-    }).first();
+      // if specified output directory, use that directory + issue name
+      // otherwise, use comic name + issue name
+      if ($outputDirectory) {
+        dest = path.join($outputDirectory, issue.name);
+      } else {
+        dest = path.join($comicName, issue.name);
+      }
+
+      // find comic pages URL and download them
+      if (promise) {
+          promise = promise.then(function(){
+            return scraper.pages(issue.url).then(createDownloadPagesPromise($comicName, issue.name, dest));
+          });
+      } else {
+        promise = scraper.pages(issue.url).then(createDownloadPagesPromise($comicName, issue.name, dest));
+      }
+    });
+    return promise;
   } else {
-    issue = _(issues.issues).first();
-  }
-
-  if (issue) {
-    if (!$outputDirectory) {
-      $outputDirectory = path.join($comicName, issue.name);
+    // Find the issue which user requested
+    var issue;
+    if ($comicIssue) {
+      issue = _(issues.issues).filter(function(issue){
+        return issue.name && issue.name.match($comicIssue)
+      }).first();
+    } else {
+      issue = _(issues.issues).first();
     }
-    // If issue found, list all pages
-    console.log("Downloading: ", $comicName, issue.name, "...");
-    return scraper.pages(issue.url);
-  } else {
-    throw new Error("Issue " + issueName + " not found");
-  }
-}).then(function(pages){
-  // Prepare list of files to be download and the target file
-  var files = _(pages).map(function(page, index){
-    var name = "00000" + (index+1);
-    name = name.substring(name.length - 4, name.length);
-    var ext = path.extname(page);
-    var filename = name + ext
-    return {url: page, name: filename}
-  }).value();
 
-  // Download files
-  return download(files, $outputDirectory);
+    if (issue) {
+      if (!$outputDirectory) {
+        $outputDirectory = path.join($comicName, issue.name);
+      }
+      // If issue found, list all pages
+      console.log("Downloading: ", $comicName, issue.name, "...");
+      return scraper.pages(issue.url).then(createDownloadPagesPromise($comicName, issue.name, $outputDirectory));
+    } else {
+      console.log("Issue " + $comicIssue + " not found");
+      throw new Error("Issue " + $comicIssue + " not found");
+    }
+  }
 }).then(function(){
   console.log("completed.")
   if ($preview) {
