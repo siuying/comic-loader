@@ -66,17 +66,7 @@ var scrape = scraper.search($comicName).then(function(issues){
   if ($downloadAll) {
     var promise;
     _(issues.issues).reverse().each(function(issue){
-      var dest;
-
-      // if specified output directory, use that directory + issue name
-      // otherwise, use comic name + issue name
-      if ($outputDirectory) {
-        dest = path.join($outputDirectory, issue.name);
-      } else {
-        // if output directory is null, set it as comicName
-        $outputDirectory = $comicName;
-        dest = path.join($comicName, issue.name);
-      }
+      var dest = path.join($outputDirectory, $comicName, issue.name);
 
       // find comic pages URL and download them
       if (promise) {
@@ -100,22 +90,15 @@ var scrape = scraper.search($comicName).then(function(issues){
     }
 
     if (issue) {
-      if (!$outputDirectory) {
-        $outputDirectory = path.join($comicName, issue.name);
-      }
+      var dest = path.join($outputDirectory, $comicName, issue.name);
       // If issue found, list all pages
-      console.log("Downloading: ", $comicName, issue.name, "...");
-      return scraper.pages(issue.url).then(createDownloadPagesPromise($comicName, issue.name, $outputDirectory));
+      return scraper.pages(issue.url).then(createDownloadPagesPromise($comicName, issue.name, dest));
     } else {
       console.log("Issue " + $comicIssue + " not found");
       throw new Error("Issue " + $comicIssue + " not found");
     }
   }
 }).then(function(){
-  console.log("completed.")
-  if ($preview) {
-    spawn("open", ["-a", "Preview", $outputDirectory]);
-  }
   phridge.destroyAll(function(){
     process.exit(0);
   });
