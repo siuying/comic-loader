@@ -5,7 +5,7 @@ Promise = require('es6-promise').Promise
 URI = require('URIjs')
 _ = require('lodash')
 
-ComicReader = require('../comic-reader')
+ComicLoader = require('../comic-loader')
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:31.0) Gecko/20100101 Firefox/31.0"
 
 phridge.config.stdout = null
@@ -154,6 +154,6 @@ _extractDayComic = ($, comicQuery, titleQuery) ->
     items.push {group: date, name: name, issue: issue, thumbnail: thumbnail, url: url}
   return items
 
-ComicReader.register(SFScraper.code, SFScraper)
+ComicLoader.register(SFScraper.code, SFScraper)
 
 module.exports = SFScraper

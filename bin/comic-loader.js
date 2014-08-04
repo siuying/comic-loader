@@ -9,13 +9,13 @@ var Promise = require('es6-promise').Promise;
 var spawn = require('child_process').spawn;
 var _ = require('lodash')
 
-var ComicReader = require('../lib/comic-reader')
+var ComicLoader = require('../lib/comic-loader')
 var SFScraper = require('../lib/scrapers/sf_scraper')
 var scraper = ComicReader.scraper('sf')
 
-process.title = 'comic';
+process.title = 'comic-loader';
 
-var argv = rc('comic', {}, optimist
+var argv = rc('comic-loader', {}, optimist
   .usage('Usage: $0 comic-name [issue] [option]')
   .alias('d', 'directory').describe('d', 'save comic to directory, default [comic-name]/[issue]')
   .alias('a', 'all').describe('a', 'download all issues of the comic')
