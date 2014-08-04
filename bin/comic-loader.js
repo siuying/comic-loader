@@ -11,26 +11,28 @@ var _ = require('lodash')
 
 var ComicLoader = require('../lib/comic-loader')
 var SFScraper = require('../lib/scrapers/sf_scraper')
-var scraper = ComicReader.scraper('sf')
+var scraper = ComicLoader.scraper('sf')
 
 process.title = 'comic-loader';
 
 var argv = rc('comic-loader', {}, optimist
   .usage('Usage: $0 comic-name [issue] [option]')
-  .alias('d', 'directory').describe('d', 'save comic to directory, default [comic-name]/[issue]')
+  .alias('d', 'directory').describe('d', 'save comic to directory, default current path')
   .alias('a', 'all').describe('a', 'download all issues of the comic')
-  .alias('p', 'preview').describe('p', 'open the downloaded files with Preview (OSX only)')
   .argv);
 
 var $comicName   = argv._[0];
 var $comicIssue  = argv._[1];
 var $downloadAll = argv.all;
 var $outputDirectory = argv.directory;
-var $preview     = argv.preview;
 
 if (!$comicName) {
   optimist.showHelp();
   process.exit(1);
+}
+
+if (!$outputDirectory) {
+  $outputDirectory = "./"
 }
 
 var createDownloadPagesPromise = function(comicName, issueName, outputDirectory) {
