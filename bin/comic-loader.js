@@ -17,14 +17,14 @@ process.title = 'comic-loader';
 
 var argv = rc('comic-loader', {}, optimist
   .usage('Usage: $0 comic-name [issue] [option]')
-  .alias('d', 'directory').describe('d', 'save comic to directory, default current path')
+  .alias('o', 'output').describe('o', 'save comic to a directory, default current path')
   .alias('a', 'all').describe('a', 'download all issues of the comic')
   .argv);
 
 var $comicName   = argv._[0];
 var $comicIssue  = argv._[1];
 var $downloadAll = argv.all;
-var $outputDirectory = argv.directory;
+var $outputDirectory = argv.output;
 
 if (!$comicName) {
   optimist.showHelp();
