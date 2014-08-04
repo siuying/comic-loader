@@ -71,6 +71,8 @@ var scrape = scraper.search($comicName).then(function(issues){
       if ($outputDirectory) {
         dest = path.join($outputDirectory, issue.name);
       } else {
+        // if output directory is null, set it as comicName
+        $outputDirectory = $comicName;
         dest = path.join($comicName, issue.name);
       }
 
