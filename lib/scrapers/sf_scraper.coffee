@@ -60,13 +60,14 @@ SFScraper =
             .filter((i, elem) -> $(".Conjunction", elem).length > 0)
             .first()
 
-          results = $("ul", table).map (i, item) ->
+          results = []
+          $("ul", table).each (i, item) ->
             image = $("img", item)
             thumbnail = image.attr('src') if image
             link = $("a", item)
             url = link.attr('href') if link
             name = link.text() if link
-            return {thumbnail: thumbnail, url: url, name: name}
+            results.push({thumbnail: thumbnail, url: url, name: name})
           resolve(results)
         else if error
           reject(error)
