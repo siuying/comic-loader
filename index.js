@@ -1,1 +1,1 @@
-exports = module.exports = require('./lib/comic-reader');
+exports = module.exports = require('./lib/comic-loader');
