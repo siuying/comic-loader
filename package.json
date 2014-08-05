@@ -1,6 +1,6 @@
 {
   "name": "comic-loader",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Dicsover and download comics online.",
   "main": "index.js",
   "bin": {
