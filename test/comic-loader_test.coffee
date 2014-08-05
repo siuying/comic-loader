@@ -1,5 +1,4 @@
 ComicLoader = require '../lib/comic-loader'
-SFScraper = require '../lib/scrapers/sf_scraper'
 expect = require('chai').expect
 
 describe 'scraper', ->

@@ -7,4 +7,6 @@ ComicLoader =
   scraper: (code) ->
     _scrapers[code]
 
+ComicLoader.SFScraper = require('./scrapers/sf_scraper')
+
 module.exports = ComicLoader
