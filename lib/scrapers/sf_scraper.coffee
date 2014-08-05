@@ -1,4 +1,3 @@
-phridge = require('phridge')
 request = require('request')
 cheerio = require('cheerio')
 Promise = require('es6-promise').Promise
@@ -7,9 +6,6 @@ _ = require('lodash')
 
 ComicLoader = require('../comic-loader')
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:31.0) Gecko/20100101 Firefox/31.0"
-
-phridge.config.stdout = null
-phridge.config.stderr = null
 
 SFScraper =
   code: "sf"
@@ -117,28 +113,25 @@ SFScraper =
   # give an issue url, find all pages of that issue
   # url - URL to an issue
   # return a promise that on success, pass array of URL to images of the page
-  pages: (url, success, failure) ->
+  pages: (url) ->
+    console.log("pages", url)
     new Promise (resolve, reject) ->
-      return phridge.spawn({loadImages: false})
-        .then((phantom) -> phantom.openPage(url))
-        .then((page) ->
-          page.run ->
-            this.evaluate ->
-              images = [];
-
-              # NextPage() is defined in the page, which should change curPic
-              while true
-                image = document.querySelector("#curPic").src
-                if !image || images.indexOf(image) > -1
-                  break
-                else
-                  images.push(image)
-                  NextPage()
-
-              return images
-        )
-        .finally(phridge.disposeAll)
-        .done(resolve, reject)
+      options =
+        url: url
+        headers:
+          'User-Agent': USER_AGENT
+      request options, (error, response, body) ->
+        if !error && response.statusCode == 200
+          $ = cheerio.load(body)
+          scriptSource = $("script").filter((i, e) -> $(e).attr('src')?.match("^/Utility/.+/.+\.js") != null ).first().attr('src')
+          fullScriptSource = URI(scriptSource).absoluteTo(url).toString()
+          _extractScript(fullScriptSource).then(resolve, reject)
+        else if error
+          console.log("error", error)
+          reject(error)
+        else
+          console.log("error", body)
+          reject(new Error("http error: #{response}, body: #{body}"))
 
 _extractDayComic = ($, comicQuery, titleQuery) ->
   items = []
@@ -155,6 +148,25 @@ _extractDayComic = ($, comicQuery, titleQuery) ->
     items.push {group: date, name: name, issue: issue, thumbnail: thumbnail, url: url}
   return items
 
-ComicLoader.register(SFScraper.code, SFScraper)
-
+_extractScript = (scriptUrl) ->
+  new Promise (resolve, reject) ->
+    options =
+      url: scriptUrl
+      headers:
+        'User-Agent': USER_AGENT
+    request options, (error, response, body) ->
+      if !error && response.statusCode == 200
+        imagesRegexp = new RegExp('picAy\\[[0-9]+\\] = "([^\\"]+)";', 'g')
+        hostRegexp = new RegExp('var hosts = \\[\\"([^\\"]+)\\"')
+        host = body.match(hostRegexp)[1]
+        images = body.match(imagesRegexp).map (match) ->
+          image = match.match(new RegExp('picAy\\[[0-9]+\\] = "([^\\"]+)";'))[1]
+          "#{host}#{image}"
+        resolve(images)
+      else if error
+        console.log("error", error)
+        reject(error)
+      else
+        console.log("error", body)
+        reject(new Error("http error: #{response}, body: #{body}"))
 module.exports = SFScraper

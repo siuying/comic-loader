@@ -1,5 +1,4 @@
 SFScraper = require '../lib/scrapers/sf_scraper'
-phridge = require('phridge')
 expect = require('chai').expect
 _ = require('lodash')
 
@@ -48,15 +47,12 @@ describe 'issues', ->
     ).catch((error) -> throw error)
 
 describe 'pages', ->
-  afterEach (done) ->
-    phridge.disposeAll().then(done(null))
-
   it 'should return an issues images', (done) ->
-    this.timeout(30000) # 30s timeout
+    this.timeout(10000) # 30s timeout
     url = "http://comic.sfacg.com/HTML/OnePiece/001j/"
     SFScraper.pages(url).then((images) ->
       expect(images).to.have.length(104)
       expect(_.first(images)).to.equal("http://hotpic.sfacg.com/Pic/OnlineComic1/OnePiece/001j/001_18620.jpg")
       expect(_.last(images)).to.equal("http://hotpic.sfacg.com/Pic/OnlineComic1/OnePiece/001j/104_31044.jpg")
       done()
-    ).catch((e) -> throw e)
+    , (e) -> throw e)
